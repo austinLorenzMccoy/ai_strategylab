@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Strategy Lab - WebSocket Client</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .panel {
+            flex: 1;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .message-container {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #e8f4fc;
+            border-left: 4px solid #3498db;
+        }
+        .message.error {
+            background-color: #fce8e8;
+            border-left: 4px solid #e74c3c;
+        }
+        .message-time {
+            font-size: 0.8em;
+            color: #7f8c8d;
+        }
+        .message-content {
+            margin-top: 5px;
+            word-break: break-all;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .status.connected {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+        .status.disconnected {
+            background-color: #fce8e8;
+            color: #e74c3c;
+        }
+        .chart-container {
+            height: 300px;
+            margin-top: 20px;
+        }
+        .clear-btn {
+            background-color: #e74c3c;
+            margin-left: 10px;
+        }
+        .clear-btn:hover {
+            background-color: #c0392b;
+        }
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Strategy Lab - WebSocket Client</h1>
+    
+    <div class="container">
+        <div class="panel">
+            <div class="controls">
+                <div class="form-group">
+                    <label for="server-url">WebSocket Server URL:</label>
+                    <input type="text" id="server-url" value="ws://localhost:8000/ws/market_data">
+                </div>
+                <div class="form-group">
+                    <label for="channel">Channel:</label>
+                    <select id="channel">
+                        <option value="market_data">Market Data</option>
+                        <option value="strategy_signals">Strategy Signals</option>
+                        <option value="strategy_example-strategy-1">Strategy 1</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button id="connect-btn">Connect</button>
+                    <button id="disconnect-btn" disabled>Disconnect</button>
+                    <button id="clear-btn" class="clear-btn">Clear Messages</button>
+                </div>
+            </div>
+            
+            <div id="connection-status" class="status disconnected">
+                Disconnected
+            </div>
+            
+            <div class="message-container" id="message-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let socket = null;
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const serverUrlInput = document.getElementById('server-url');
+        const channelSelect = document.getElementById('channel');
+        const connectionStatus = document.getElementById('connection-status');
+        const messageContainer = document.getElementById('message-container');
+        
+        // Connect to WebSocket server
+        connectBtn.addEventListener('click', () => {
+            if (socket) {
+                addMessage('Already connected', 'error');
+                return;
+            }
+            
+            const serverUrl = serverUrlInput.value;
+            const channel = channelSelect.value;
+            const fullUrl = serverUrl.endsWith(channel) ? serverUrl : `${serverUrl.replace(/\/+$/, '')}/${channel}`;
+            
+            try {
+                socket = new WebSocket(fullUrl);
+                
+                socket.onopen = () => {
+                    connectionStatus.textContent = 'Connected';
+                    connectionStatus.className = 'status connected';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    
+                    // Send a subscription message
+                    const subscriptionMsg = {
+                        client: 'web_client',
+                        action: 'subscribe'
+                    };
+                    socket.send(JSON.stringify(subscriptionMsg));
+                    
+                    addMessage('Connected to server');
+                };
+                
+                socket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        addMessage('Received message', 'info', data);
+                    } catch (error) {
+                        addMessage(`Received: ${event.data}`);
+                    }
+                };
+                
+                socket.onclose = () => {
+                    connectionStatus.textContent = 'Disconnected';
+                    connectionStatus.className = 'status disconnected';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    socket = null;
+                    
+                    addMessage('Disconnected from server');
+                };
+                
+                socket.onerror = (error) => {
+                    addMessage(`WebSocket error: ${error.message}`, 'error');
+                };
+            } catch (error) {
+                addMessage(`Failed to connect: ${error.message}`, 'error');
+            }
+        });
+        
+        // Disconnect from WebSocket server
+        disconnectBtn.addEventListener('click', () => {
+            if (socket) {
+                socket.close();
+                socket = null;
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                
+                addMessage('Disconnected from server');
+            }
+        });
+        
+        // Clear messages
+        clearBtn.addEventListener('click', () => {
+            messageContainer.innerHTML = '';
+        });
+        
+        // Add a message to the container
+        function addMessage(message, type = 'info', data = null) {
+            const messageElement = document.createElement('div');
+            messageElement.className = `message ${type}`;
+            
+            const timeElement = document.createElement('div');
+            timeElement.className = 'message-time';
+            timeElement.textContent = new Date().toLocaleTimeString();
+            
+            const contentElement = document.createElement('div');
+            contentElement.className = 'message-content';
+            
+            if (data) {
+                contentElement.innerHTML = `<strong>${message}</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+            } else {
+                contentElement.textContent = message;
+            }
+            
+            messageElement.appendChild(timeElement);
+            messageElement.appendChild(contentElement);
+            
+            messageContainer.appendChild(messageElement);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+        
+        // Handle page unload
+        window.addEventListener('beforeunload', () => {
+            if (socket) {
+                socket.close();
+            }
+        });
+    </script>
+</body>
+</html>

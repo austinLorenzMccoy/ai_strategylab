@@ -1,0 +1,36 @@
+```
+ai_strategy_lab/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # FastAPI application entry point
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── routes.py        # API endpoints
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config.py        # Configuration management
+│   │   ├── okx_client.py    # OKX API client
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── strategy.py      # Strategy data models
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── rag_service.py   # RAG implementation
+│   │   ├── llm_service.py   # LLM integration
+│   │   ├── rl_service.py    # RL optimization
+│   │   ├── execution_service.py  # Strategy execution
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── base_agent.py    # Base agent class
+│   │   ├── data_analyst.py  # Data analyst agent
+│   │   ├── strategy_optimizer.py  # Strategy optimizer agent
+│   │   ├── execution_agent.py  # Execution agent
+│   ├── utils/
+│       ├── __init__.py
+│       ├── data_utils.py    # Data handling utilities
+│       ├── market_utils.py  # Market analysis utilities
+├── .env                     # Environment variables
+├── requirements.txt         # Package dependencies
+├── README.md                # Project documentation
+├── run.py                   # Script to run the application
+```
