@@ -44,3 +44,5 @@ pytest>=7.4.3
 # Async utilities
 asyncio>=3.4.3
 aiohttp>=3.9.0
+
+python-telegram-bot==22.1

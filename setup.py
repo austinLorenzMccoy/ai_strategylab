@@ -9,7 +9,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires=">=3.9",
-    install_requires=[
+        install_requires=[
         "fastapi>=0.115.0",
         "uvicorn>=0.34.0",
         "pydantic>=2.11.0",
@@ -23,6 +23,7 @@ setup(
         "pandas>=2.1.3",
         "numpy>=1.26.2",
         "gymnasium>=1.0.0",
+        "python-telegram-bot==22.1"
     ],
     extras_require={
         "dev": [
